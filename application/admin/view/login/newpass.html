@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html class="x-admin-sm">
+    
+{include file='public/header' /}
+    <body>
+        <div class="layui-fluid">
+            <div class="layui-row">
+                <form class="layui-form">
+                  <div class="layui-form-item">
+                      <label for="admin_phone" class="layui-form-label">
+                          <span class="x-red">*</span>手机号
+                      </label>
+                      <div class="layui-input-inline">
+                          <input type="text" id="admin_phone" name="admin_phone" required="" lay-verify="required"
+                          autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-form-mid layui-word-aux">
+                          <span class="x-red">*</span>将会成为您唯一的登入名
+                      </div>
+                  </div>
+                  <div class="layui-form-item">
+                      <label for="admin_password" class="layui-form-label">
+                          <span class="x-red">*</span>密码
+                      </label>
+                      <div class="layui-input-inline">
+                          <input type="password" id="admin_password" name="admin_password" required="" lay-verify="pass"
+                          autocomplete="off" class="layui-input">
+                      </div>
+                      <div class="layui-form-mid layui-word-aux">
+                          6到12个字符
+                      </div>
+                  </div>
+                  <div class="layui-form-item">
+                      <label for="admin_repass" class="layui-form-label">
+                          <span class="x-red">*</span>确认密码
+                      </label>
+                      <div class="layui-input-inline">
+                          <input type="password" id="admin_repass" name="admin_repass" required="" lay-verify="repass"
+                          autocomplete="off" class="layui-input">
+                      </div>
+                  </div>
+                  <div class="layui-form-item">
+                      <label for="admin_repass" class="layui-form-label">
+                      </label>
+                      <button  class="layui-btn" lay-filter="add" lay-submit="">
+                          	确定
+                      </button>
+                  </div>
+              </form>
+            </div>
+        </div>
+        <script>layui.use(['form', 'layer'],
+            function() {
+                $ = layui.jquery;
+                var form = layui.form,
+                layer = layui.layer;
+
+
+                //监听提交
+                form.on('submit(add)',
+                function(data) {
+              		$.ajax({
+              			type:'post',
+              			url:'newPass',
+              			data:data.field,
+              			success:function(data){
+              				if(data.code==1){
+              					layer.msg(data.message,{icon:6,time:2000},function(){
+              						location.href='{:url("login")}'
+              					})
+              				}else{
+              					layer.msg(data.message,{icon:5,time:2000},function(){
+              						// xadmin.father_reload();
+              					})
+              				}
+              			}
+              		});
+				
+                    return false;
+                });
+
+            });</script>
+       
+    </body>
+
+</html>
