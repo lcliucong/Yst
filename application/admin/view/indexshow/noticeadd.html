@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="x-admin-sm">
+    
+    <head>
+        <meta charset="UTF-8">
+        <title>欢迎页面-X-admin2.2</title>
+        <meta name="renderer" content="webkit">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi" />
+        <link rel="stylesheet" href="__STATIC__/admin/css/font.css">
+        <link rel="stylesheet" href="__STATIC__/admin/css/xadmin.css">
+        <link rel="stylesheet" href="__STATIC__/admin/lib/layui/css/layui.css"  media="all">
+        <script type="text/javascript" src="__STATIC__/admin/lib/layui/layui.js" charset="utf-8"></script>
+        <script type="text/javascript" src="__STATIC__/admin/js/xadmin.js"></script>
+        <!-- 让IE8/9支持媒体查询，从而兼容栅格 -->
+        <!--[if lt IE 9]>
+            <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+            <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+    </head>
+    <body>
+        <div class="layui-fluid">
+            <div class="layui-row">
+                <form class="layui-form">
+                    <div class="layui-form-item">
+                        <label for="notice_title" class="layui-form-label">
+                            <span class="x-red">*</span>标题</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="notice_title" name="notice_title" required="" lay-verify="title" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+
+
+                    <div class="layui-form-item">
+                        <label for="notice_content" class="layui-form-label">
+                            <span class="x-red">*</span>通知内容</label>
+                        <div class="layui-input-block">
+                            <textarea name="notice_content" placeholder="请输入通知内容" class="layui-textarea"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="layui-form-item">
+                        <label for="notice_auth" class="layui-form-label">
+                            <span class="x-red"></span>作者</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="notice_auth" name="notice_auth" required=""  autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+<!--                    <div class='layui-input-inline'>-->
+<!--                        <button type="button" class="layui-btn" id="image" name='image'>-->
+<!--                            上传文件-->
+<!--                        </button>-->
+<!--                    </div>-->
+                    <div class="layui-upload">
+                        <button type="button" class="layui-btn layui-btn-normal" id="imglist">选择多文件</button>
+                        <div class="layui-upload-list" style="max-width: 1000px;">
+                            <table class="layui-table">
+                                <colgroup>
+                                    <col>
+                                    <col width="150">
+                                    <col width="260">
+                                    <col width="150">
+                                </colgroup>
+                                <thead>
+                                <tr><th>文件名</th>
+                                    <th>大小</th>
+                                    <th>上传进度</th>
+                                    <th>操作</th>
+                                </tr></thead>
+                                <tbody id="demoList"></tbody>
+                            </table>
+                        </div>
+<!--                        <button type="button" class="layui-btn" id="testListActiosn" name='image'> 上传文件</button>-->
+                        <div class="layui-form-item">
+                            <button class="layui-btn" lay-filter="add" lay-submit="" id="testListAction" name="image">增加</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script>layui.use(['form', 'layer','jquery'],
+            function() {
+                $ = layui.jquery;
+                var form = layui.form,
+                layer = layui.layer;
+
+                //监听提交
+                form.on('submit(add)',
+                function(data) {
+                   // 发异步，把数据提交给php
+                    $.ajax({
+                        type: 'post',
+                        url: 'noticeadds',
+                        data: data.field,
+                        success: function (res) {
+                            if(res.code==1){
+                                layer.msg(res.msg, {icon: 6,time:1000}, function(){
+                                    //关闭当前frame
+                                    xadmin.close();
+                                    // 可以对父窗口进行刷新
+                                    xadmin.father_reload();
+                                });
+                            }else{
+                                layer.msg(res.msg, {icon:5,time:1000}, function(){
+                                    //关闭当前frame
+                                    // 可以对父窗口进行刷新
+                                });
+                            }
+
+                        }
+                    })
+                    return false;
+                });
+
+                });
+        </script>
+<!--        <script>-->
+<!--            layui.use('upload', function(){-->
+<!--                var upload = layui.upload;-->
+<!--                //执行实例-->
+<!--                var uploadInst = upload.render({-->
+<!--                    elem: '#image',-->
+<!--                    url: 'imgs',-->
+<!--                    before: function(obj){-->
+<!--                    //预读本地文件示例，不支持ie8-->
+<!--                    obj.preview(function(index, file, result){-->
+<!--                        $('#demo1').attr('src', result); //图片链接（base64）-->
+<!--                    });-->
+
+<!--                    element.progress('demo', '0%'); //进度条复位-->
+<!--                    layer.msg('上传中', {icon: 16, time: 1000});-->
+<!--                }-->
+<!--            ,done: function(res){-->
+<!--                    //如果上传失败-->
+<!--                    if(res.code > 0){-->
+<!--                        return layer.msg('上传失败');-->
+<!--                    }-->
+<!--                    //上传成功的一些操作-->
+<!--                    //……-->
+<!--                    $('#demoText').html(''); //置空上传失败的状态-->
+<!--                }-->
+<!--            ,error: function(){-->
+<!--                    //演示失败状态，并实现重传-->
+<!--                    var demoText = $('#demoText');-->
+<!--                    demoText.html('<span style="color: #FF5722;">上传失败</span> <a class="layui-btn layui-btn-xs demo-reload">重试</a>');-->
+<!--                    demoText.find('.demo-reload').on('click', function(){-->
+<!--                        uploadInst.upload();-->
+<!--                    });-->
+<!--                }-->
+<!--                //进度条-->
+<!--            ,progress: function(n, elem, e){-->
+<!--                    element.progress('demo', n + '%'); //可配合 layui 进度条元素使用-->
+<!--                    if(n == 100){-->
+<!--                        layer.msg('上传完毕', {icon: 1});-->
+<!--                    }-->
+<!--                }-->
+<!--                });-->
+<!--            });-->
+<!--        </script>-->
+        <script>
+            layui.use(['upload', 'element', 'layer'], function(){
+                var $ = layui.jquery
+                    ,upload = layui.upload
+                    ,element = layui.element
+                    ,layer = layui.layer;
+                var uploadListIns = upload.render({
+                    elem: '#imglist'
+                    , elemList: $('#demoList') //列表元素对象
+                    , url: 'noticeadds' //此处用的是第三方的 http 请求演示，实际使用时改成您自己的上传接口即可。
+                    , accept: 'file'
+                    , multiple: true
+                    , number: 3
+                    , auto: false
+                    , bindAction: '#testListAction'
+                    , choose: function (obj) {
+                        var that = this;
+                       //    var files = new Array();
+                        var files = this.files = obj.pushFile(); //将每次选择的文件追加到文件队列
+
+                        //读取本地文件
+                        obj.preview(function (index, file, result) {
+                            var tr = $(['<tr id="upload-' + index + '">'
+                                , '<td>' + file.name + '</td>'
+                                , '<td>' + (file.size / 1014).toFixed(1) + 'kb</td>'
+                                , '<td><div class="layui-progress" lay-filter="progress-demo-' + index + '"><div class="layui-progress-bar" lay-percent=""></div></div></td>'
+                                , '<td>'
+                                , '<button class="layui-btn layui-btn-xs demo-reload layui-hide">重传</button>'
+                                , '<button class="layui-btn layui-btn-xs layui-btn-danger demo-delete">删除</button>'
+                                , '</td>'
+                                , '</tr>'].join(''));
+
+                            //单个重传
+                            tr.find('.demo-reload').on('click', function () {
+                                obj.upload(index, file);
+                            });
+
+                            //删除
+                            tr.find('.demo-delete').on('click', function () {
+                                delete files[index]; //删除对应的文件
+                                tr.remove();
+                                uploadListIns.config.elem.next()[0].value = ''; //清空 input file 值，以免删除后出现同名文件不可选
+                            });
+
+                            that.elemList.append(tr);
+                            element.render('progress'); //渲染新加的进度条组件
+                        });
+                    }
+                    , done: function (res, index, upload) { //成功的回调
+                        var that = this;
+                        //if(res.code == 0){ //上传成功
+                        var tr = that.elemList.find('tr#upload-' + index)
+                            , tds = tr.children();
+                        tds.eq(3).html(''); //清空操作
+                        delete this.files[index]; //删除文件队列已经上传成功的文件
+                        return;
+                        //}
+                        this.error(index, upload);
+                    }
+                    , allDone: function (obj) { //多文件上传完毕后的状态回调
+                        console.log(obj)
+                    }
+                    , error: function (index, upload) { //错误回调
+                        var that = this;
+                        var tr = that.elemList.find('tr#upload-' + index)
+                            , tds = tr.children();
+                        tds.eq(3).find('.demo-reload').removeClass('layui-hide'); //显示重传
+                    }
+                    , progress: function (n, elem, e, index) { //注意：index 参数为 layui 2.6.6 新增
+                        element.progress('progress-demo-' + index, n + '%'); //执行进度条。n 即为返回的进度百分比
+                    }
+                })
+            });
+        </script>
+    </body>
+
+</html>
