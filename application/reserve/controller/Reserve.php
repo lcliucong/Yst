@@ -171,14 +171,14 @@ class Reserve extends Common{
             $timedd = date("t",strtotime($timed));
 //            本月末
             $timeend = $timed.'-'.$timedd;
-        //判断是否已经生成过
+            //判断是否已经生成过
             $lastdata = Medst::field('id,operation_time')->where('operation_time','between time',[$timeopen,$timeend])->limit(1)->find();
 
             $datetime = substr($lastdata['operation_time'],0,-3);
 //            if($timed==$datetime){
 //                return $this->returns(500,'Already exists');
 //            }
-        //判断是否已经生成过结束
+            //判断是否已经生成过结束
 
             #查询商业公司名称、药品名称、规格、计量单位、产地、批号一样的数据
 //            本月初
@@ -213,7 +213,7 @@ class Reserve extends Common{
 //                where x.innums!=y.innums and x.facname=y.facname and x.med_name=y.med_name and x.med_specs=y.med_specs and x.med_unit = y.med_unit and x.buss_origin = y.buss_origin and x.med_batchnum = y.med_batchnum
 //                group by x.facname,x.med_name,x.med_specs,x.med_unit,x.buss_origin,x.med_batchnum
 //            ");
-//            var_dump($a);die;
+////            var_dump($a);die;
 //            foreach ($repeat_arr as $rk=>$rv) {
 //                $rsda[$rk] = Db::name('temporary_transfer')//->field('id,innums,facname,med_name,med_specs,med_unit,buss_origin,med_batchnum')
 //                    ->where([
@@ -254,13 +254,14 @@ class Reserve extends Common{
 //            }
 //            die;
 //            var_dump($repeat_arr);die;
-            $keyarr =['company_name','names','fac_specs','measuring_unit','origin','batch_num','operation_time','stock_num'];
+
 //            $keys = [];
 //            for($xx=0;$xx<count($repeat_arr);$xx++){
 //                $keys[] = $xx;
 //            }
             $repeat_arr = array_values($repeat_arr);
 //        var_dump($repeat_arr);die;
+            $keyarr =['company_name','names','fac_specs','measuring_unit','origin','batch_num','operation_time','stock_num'];
             foreach ($repeat_arr as $kk=>$vv){
                 //查询操作时间
                 $fields[] = Db::name('flowofmed')->field('in_time')
@@ -293,18 +294,19 @@ class Reserve extends Common{
 
                 //求入库总量
                 $rsda[] = Db::name('temporary_transfer')//->field('id,innums,facname,med_name,med_specs,med_unit,buss_origin,med_batchnum')
-                    ->where([
-                        ['facname','=',$vv['facname']],
-                        ['med_name','=',$vv['med_name']],
-                        ['med_specs','=',$vv['med_specs']],
-                        ['med_unit','=',$vv['med_unit']],
-                        ['buss_origin','=',$vv['buss_origin']],
-                        ['med_batchnum','=',$vv['med_batchnum']],
-                    ])
+                ->where([
+                    ['facname','=',$vv['facname']],
+                    ['med_name','=',$vv['med_name']],
+                    ['med_specs','=',$vv['med_specs']],
+                    ['med_unit','=',$vv['med_unit']],
+                    ['buss_origin','=',$vv['buss_origin']],
+                    ['med_batchnum','=',$vv['med_batchnum']],
+                ])
                     ->group('facname,med_name,med_specs,med_unit,buss_origin,med_batchnum')
                     ->sum('innums');
 //                dump($rsda[$kk]);
                 $repeat_arr[$kk]['operation_time'] = $fields[$kk]['in_time'];
+
 //                $repeat_arr[$kk]['operation_time'] =substr($repeat_arr[$kk]['operation_time'],0,-3);
                 #上月时间
                 $times[] = date("Y-m-d",strtotime("last month",strtotime($repeat_arr[$kk]['operation_time'])));
@@ -327,11 +329,14 @@ class Reserve extends Common{
                 }
                 #上月库存加本月库存
                 $repeat_arr[$kk]['total']=(int)$last[$kk]['stock_num']+((int)$rsda[$kk]-(int)$rsdata[$kk]);
-//                dump($repeat_arr);
                 $new[] = array_combine($keyarr,$repeat_arr[$kk]);
 //                dump(123);
             }
 //            var_dump($new);
+//            die;
+//            dump($repeat_arr);
+//            die;
+//            var_dump($repeat_arr);
 //            var_dump($rsda);
 //            var_dump($rsdata);
 //            var_dump($rsda);

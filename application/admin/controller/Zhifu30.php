@@ -8,131 +8,8 @@ use think\Collection;
 
 
 class Zhifu30 extends Common{
-    public function zhifuadd(){
-        $timenow=input('time');
-        $time=input('time');
-        $time=explode('-',$time);
-        $ces=array_pop($time);
-        $time=$time['0'];
 
-        if($ces>1){
-            $ces-=1;
-            if(strlen($ces)<2){
-                $ces='0'.$ces;
-            }
-        }else{
-            $time-=1;
-            $ces=12;
-        }
-        $timeup=$time.'-'.$ces;
-
-        $xinxibeian = db('out')->field('zhongduanmingcheng,yiyuanjibie,yewuyuan,diqu,pinming,guige,bumen,yapiabbiaozhun,zhifufangfa,zhongduanmingcheng2')
-            //->where('zhifufangfa',2)
-            ->select();
-        $xinxibeian2 = db('out')->field('zhongduanmingcheng,pinming,guige,zhongduanmingcheng2,zhifufangfa')->select();
-
-        $data=db('flowofmed')->field('innums,med_salenum,facname,med_name,med_specs,customer_name,customer_nameb,in_time,med_price,buss_origin,buss_name,med_batchnum,med_unit')->where('in_time','like',$timenow.'%')->select();
-        $i=0;
-
-        $result=array();
-        $nomate=array();
-        //dump($timenow);exit;
-//dump(db('flowofmed')->where('in_time','like',$timenow.'%')->select());
-//dump($xinxibeian);exit;
-        foreach($data as $j =>$value){
-
-            $zhifu['med_name'] = $value['med_name'];
-            $zhifu['med_specs'] = $value['med_specs'];
-            $zhifu['customer_name'] = $value['customer_name'];
-            $zhifu['customer_nameb'] = $value['customer_nameb'];
-
-            foreach ($xinxibeian as $k => $v) {
-
-                    if (
-                        $zhifu['med_name']== $v['pinming'] &&
-                        $zhifu['med_specs']==$v['guige'] &&
-                        $zhifu['customer_name']==$v['zhongduanmingcheng'] &&
-                        $zhifu['customer_nameb']==$v['zhongduanmingcheng2']
-                    ) {
-                        $shangyuejinhuo=db('zhifu30')->where(function($query)use($zhifu){
-                            $query->where('kehumingcheng1',$zhifu['customer_name'])->whereor('kehumingcheng2',$zhifu['customer_nameb']);
-                        })
-                            ->where('pinming',$zhifu['med_name'])->where('guige',$zhifu['med_specs'])
-                            ->where('shangyegongsi',$value['facname'])
-                            ->where('yuefen',$timeup)
-                            ->sum('benyuekucun');
-                        if(empty($shangyueyushu)){
-                            $shangyueyushu=0;
-                        }
-
-                        $result[$i]['yuefen']=$timenow;
-                        $result[$i]['diqu']=$v['diqu'];
-                        $result[$i]['bumen']=$v['bumen'];
-                        $result[$i]['yewuyuan']=$v['yewuyuan'];
-                        $result[$i]['kehumingcheng1']=$value['customer_name'];
-                        $result[$i]['kehumingcheng2']=$value['customer_nameb'];
-                        //$result[$i]['med_salenum']=$value['med_salenum'];
-                        $result[$i]['yiyuanjibie']=$v['yiyuanjibie'];
-                        $result[$i]['shangyegongsi']=$value['facname'];
-                        $result[$i]['pinming']=$v['pinming'];
-                        $result[$i]['guige']=$v['guige'];
-                        $result[$i]['shangyuejinhuo']=$shangyuejinhuo;
-                        $result[$i]['benyuejinhuo']=$value['med_salenum'];
-                        $result[$i]['shangyuexiaoshou']=$result[$i]['shangyuejinhuo'];
-                        $result[$i]['benyuekucun']=$result[$i]['benyuejinhuo'];
-                        $result[$i]['yapiabbiaozhun']=$v['yapiabbiaozhun'];
-                        $result[$i]['abjine']='';
-                        $result[$i]['zhifufangfa']=$v['zhifufangfa'];
-                        if(empty($result[$i]['kehumingcheng1'])||
-                            empty($result[$i]['pinming'])||empty($result[$i]['guige'])||empty($result[$i]['shangyegongsi'])){
-                            return json(['code'=>0,'message'=>'数据为空或格式不对']);
-                        }
-                        break;
-
-                    }
-
-            }
-
-
-            if(empty($result[$i])){
-
-                $data[$j]['message']='信息备案不存在（相等两条及以下视为不存在）';
-                foreach ($xinxibeian2 as $xinxi2) {
-                    if($zhifu['med_specs']==$xinxi2['guige']&&$zhifu['customer_name']==$xinxi2['zhongduanmingcheng']&&$zhifu['customer_nameb']==$xinxi2['zhongduanmingcheng2']
-                    ) {
-                        $data[$j]['message'] = '品名有误（存在规格，终端名称，终端别名一致）';break;
-                    } elseif ($zhifu['med_name']==$xinxi2['pinming']&&$zhifu['med_specs']==$xinxi2['guige']&&$zhifu['customer_nameb']==$xinxi2['zhongduanmingcheng2']) {
-                        $data[$j]['message'] = '终端名称有误（存在品名，规格，终端别名一致）';break;
-                    } elseif ($zhifu['med_name']==$xinxi2['pinming']&&$zhifu['customer_name']==$xinxi2['zhongduanmingcheng']&&$zhifu['customer_nameb']==$xinxi2['zhongduanmingcheng2']) {
-                        $data[$j]['message'] = '规格有误（存在品名，终端名称，终端别名一致）';break;
-                    } elseif ($zhifu['med_name']==$xinxi2['pinming']&&$zhifu['med_specs']==$xinxi2['guige']&&$zhifu['customer_name']==$xinxi2['zhongduanmingcheng']) {
-                        $data[$j]['message'] = '终端别名有误（存在品名，规格，终端名称一致）';break;
-                    }
-
-                }
-                $nomate[] = $data[$j];
-            }$i++;
-
-        }
-        $result2=array_filter($result,function($result){
-                return $result['zhifufangfa']==2;
-        });
-
-
-        if(!empty($result2)){        $result2=array_values($result2);}
-        if(!empty($nomate)){        $nomate=array_values($nomate);}
-
- //       dump($result);
-//        dump($nomate);
-
-        if($result2||$nomate){
-            return json(['code'=>200,'mes'=>'成功','pipei'=>$result2,'weipipei'=>$nomate]);
-        }else{
-            return json(['code'=>0,'mes'=>'不存在匹配结果','pipei'=>[],'weipipei'=>[]]);
-        }
-
-    }
-    public function zhifubaocun()
+    public function zhifu30baocun()
     {
         ini_set('memory_limit','1024M');
         set_time_limit(0);
@@ -153,67 +30,37 @@ class Zhifu30 extends Common{
             $ces=12;
         }
         $timeup=$time.'-'.$ces;
-        $lsje=0;
-        $dbje=0;
-        $lsabje=0;
+//        $time3 = date("t",strtotime($timeup));
+
         $start = microtime(true);
 
+
         $yaoming=Db::name('zhifu30')->where('yuefen',$timeup)->distinct(true)->field('pinming')->select();
-        if(empty($yaoming)) return '没有上月份数据，无法计算当月';
+
+
+        if(empty($yaoming)) return json(['code'=>'0','mes'=>'没有上月份数据，无法计算当月']);
         foreach($yaoming as $ym) {
             $i=-1;
-            $data = Db::name('flowofmed')->field('med_name,med_specs,customer_name,customer_nameb,med_price,sum(med_salenum) as med_salenum')
+            $benyueliuxiang = Db::name('flowofmed')->field('med_name,med_specs,customer_name,customer_nameb,sum(med_salenum) as med_salenum')
                 ->where('med_name', $ym['pinming'])
                 ->where('in_time', 'between time', [$timenow . '-01', $timenow . '-' . $time2])
                 ->group('med_name,med_specs,customer_name,customer_nameb')
                 ->order('med_name')
                 ->select();
-            $zhifu = Db::name('zhifu30')->field('diqu,bumen,bumenjingli,zhuguan,yewuyuan,daibiao,yiyuanjibie,shangyegongsi,
-            benyueyushu,abbiaozhunshuihou,lunwenfei,zhuguanjiangjinticheng,daibiaojiangjinticheng,kehumingcheng1,pinming,
-            guige,kehumingcheng2,jinglijiangjinticheng,shangyegonghuojia')
+//            $start2=microtime(true);
+            $zhifu = Db::name('zhifu30')->field('diqu,bumen,bumenjingli,yewuyuan,yiyuanjibie,shangyegongsi,
+            shangyuejinhuo,yapiabbiaozhun,shangyuexiaoshou,benyuejinhuo,benyuekucun,kehumingcheng1,pinming,
+            guige,kehumingcheng2')
                 ->where('pinming', $ym['pinming'])
                 ->where('yuefen', $timeup)
                 ->order('pinming')
-                ->select();
-
+                ->select();//
+//$zhifu = Db::name('zhifu30') ->where('yuefen', $timeup)->select();
+//            dump(microtime(true) - $start2);
+//exit;
             foreach ($zhifu as $value) {
-                $i++;
                 $new["benyuejinhuo"] = 0;
-                $new['shangyueyushu'] = $value['benyueyushu'];
-                if($ym['pinming']=='开喉剑喷雾剂' && $value['guige']=='儿童20ml'&& in_array($value['daibiao'],$gongshi)){
-                    foreach ($data as $k=> $liushui) {
-                        if ($value['guige'] == $liushui['med_specs'] &&
-                            $value['kehumingcheng1'] == $liushui['customer_name'] &&
-                            $value['kehumingcheng2'] == $liushui['customer_nameb']
-                        ){
-                            if(in_array($liushui['med_salenum'],[0,1,2,3])){
-                                $new["benyuejinhuo"] = 0;
-                            }else
-                                $new["benyuejinhuo"] = $liushui['med_salenum'];
-                            if(($new['shangyueyushu']+$new['benyuejinhuo'])<0){
-                                $new['benyuexiaoshou'] = bcadd($new['shangyueyushu'], $new['benyuejinhuo'], 2);
-                                $new['benyueyushu'] = 0;
-                            }
-                            unset($data[$k]);
-                            break;
-                        }
-                    }
-                }else{
-                    foreach ($data as $k=> $liushui) {
-                        if ($value['guige'] == $liushui['med_specs'] &&
-                            $value['kehumingcheng1'] == $liushui['customer_name'] &&
-                            $value['kehumingcheng2'] == $liushui['customer_nameb']
-                        ) {
-                            $new["benyuejinhuo"] = $liushui['med_salenum'];
-                            if(($new['shangyueyushu']+$new['benyuejinhuo'])<0){
-                                $new['benyuexiaoshou'] = bcadd($new['shangyueyushu'], $new['benyuejinhuo'], 2);
-                                $new['benyueyushu'] = 0;
-                            }
-                            unset($data[$k]);
-                            break;
-                        }
-                    }
-                }
+                $new["shangyuejinhuo"] = $value['benyuekucun'];
                 $new['yuefen'] = $timenow;
                 $new['diqu'] = $value['diqu'];
                 $new['yiyuanjibie'] = $value['yiyuanjibie'];
@@ -221,96 +68,37 @@ class Zhifu30 extends Common{
                 $new['kehumingcheng2'] = $value['kehumingcheng2'];
                 $new['shangyegongsi'] = $value['shangyegongsi'];
                 $new['bumen'] = $value['bumen'];
-
-                if($new['bumen']=='直营'&&$new['benyuejinhuo']==0){
-                    $new['benyuexiaoshou'] = 0;
-                    $new['benyueyushu'] = $new['shangyueyushu'];
-                }
-                elseif($new["benyuejinhuo"] == 0||($new['shangyueyushu']+$new['benyuejinhuo'])>0){
-                    $new['benyuexiaoshou'] = round(bcmul((bcadd($new['shangyueyushu'], $new['benyuejinhuo'], 2)), 0.7, 2));
-                    $new['benyueyushu'] = bcsub(bcadd($new['shangyueyushu'], $new['benyuejinhuo'], 3), $new['benyuexiaoshou'], 2);
-                }
-                $new['shangyegonghuojia'] = $value['shangyegonghuojia'];
-                $new['guige'] = $value['guige'];
-                $new['daibiao'] = $value['daibiao'];
+                $new['bumenjingli'] = $value['bumenjingli'];
                 $new['yewuyuan'] = $value['yewuyuan'];
                 $new['pinming'] = $value['pinming'];
-                $new['wanchengjine'] = bcmul($new['benyuexiaoshou'], $new['shangyegonghuojia'], 2);
-                $new['wanchenglv'] = '';
-                $new['jiangfa'] = '';
-                $new['renwu'] = '';
-                $new['shizhijine'] = '';
-                if ($new['bumen'] == '直营' && empty($value['daibiao']) && !empty($value['yewuyuan'])) {
-                    //是直营部门的业务员，任务按照产品分
-                    $new['bumenjingli'] = $value['bumenjingli'];
-                    $new['abbiaozhunshuihou'] = $value['abbiaozhunshuihou'];
-                    $new['abjine'] = round(bcmul($new['abbiaozhunshuihou'], $new['benyuexiaoshou'], 3), 2);
-                    $new['jinglijiangjinticheng'] = $value['jinglijiangjinticheng'];
-                    $new['jinglijiangjin'] = round(bcmul($new['jinglijiangjinticheng'], $new['benyuexiaoshou'], 3), 2);
-                    if($i+2>count($zhifu)) goto abcd;
-
-                    if ($value['yewuyuan'] == $zhifu[$i + 1]['yewuyuan'] && $value['guige'] == $zhifu[$i + 1]['guige']) {
-                        $lsje=$new['wanchengjine']+$lsje;
-                        $lsabje += $new['abjine'];
-                    } else {
-                        abcd:
-                        $linshijine=$lsje+$new['wanchengjine'];
-                        $linshiabjine=$lsabje+$new['abjine'];
-                        $new['renwu'] = db::name('renwu')->where('name', $new['yewuyuan'])->where('guige', $new['guige'])->field('renwu')->find()['renwu'];
-                        if(!empty($new['renwu'])){
-                            $new['wanchenglv'] = bcdiv($linshijine, $new['renwu'], 2);
-                            $new['jiangfa'] = round(bcmul((bcsub($new['wanchengjine'], $new['renwu'], 3)), 0.01, 3), 2);
-                        }
-                        $lsje=0;
-                        $value['shizhijine'] = round(bcadd($linshiabjine['abjine'], $new['jiangfa'], 3), 2);
-                        $lsabje=0;
-                    }
-                } elseif (empty($value['yewuyuan']) && !empty($value['daibiao'])) {
-                    //是预算部的代表，任务每人一个
-                    $new['abbiaozhunshuihou'] = '';
-                    $new['abjine'] = '';
-
-                    $new['zhuguan'] = $value['zhuguan'];
-                    $new['lunwenfei'] = $value['lunwenfei'];
-                    $new['lunwenfeijine'] = round(bcmul($new['lunwenfei'], $new['benyuexiaoshou'], 3), 2);
-                    $new['daibiaojiangjinticheng'] = $value['daibiaojiangjinticheng'];
-                    $new['daibiaojiangjin'] = round(bcmul($new['daibiaojiangjinticheng'], $new['benyuexiaoshou'], 3), 2);
-                    $new['zhuguanjiangjinticheng'] = $value['zhuguanjiangjinticheng'];
-                    $new['zhuguanjiangjin'] = round(bcmul($new['zhuguanjiangjinticheng'], $new['benyuexiaoshou'], 3), 2);
-                    if($i+2>count($zhifu)) goto abc;
-                    if ($value['daibiao'] == $zhifu[$i + 1]['daibiao']) {
-                        $new['wanchenglv'] = '';
-                        $dbje+= $new['wanchengjine'];
-                    } else {
-                        abc:
-                        $new['renwu'] = db::name('renwu')->where('name', $new['daibiao'])->field('renwu')->find()['renwu'];
-                        $wanchengjine=$dbje+$new['wanchengjine'];
-                        if(!empty($new['renwu'])){
-                            $new['wanchenglv'] = bcdiv($wanchengjine, $new['renwu'], 2);
-                        }
-                        $dbje=0;
-                        if ($new['wanchenglv'] < 0.8) {
-                            $new['shizhijine'] = 0;
-                        } elseif ($new['wanchenglv'] >= 1) {
-                            $new['shizhijine'] = $new['daibiaojiangjin'];
-                        } else {
-                            $new['shizhijine'] = bcmul($new['daibiaojiangjin'], $new['wanchenglv'], 3);
+                $new['guige'] = $value['guige'];
+                $new['yapiabbiaozhun']=$value['yapiabbiaozhun'];
+                    foreach ($benyueliuxiang as $k=> $liushui) {
+                        if ($value['guige'] == $liushui['med_specs'] &&
+                            $value['kehumingcheng1'] == $liushui['customer_name'] &&
+                            $value['kehumingcheng2'] == $liushui['customer_nameb']
+                        ) {
+                            $new["benyuejinhuo"] = $liushui['med_salenum'];
+                            unset($benyueliuxiang[$k]);
+                            break;
                         }
                     }
-                }
-
-                //保存到数据库
-
+                $new['shangyuexiaoshou']=$new['shangyuejinhuo'];
+                $new['benyuekucun']=$new['benyuejinhuo'];
+                $new['abjine']=bcmul($new['yapiabbiaozhun'],$new['shangyuexiaoshou']);
                 $a[]=$new;
+
             }
-
-
-        }
+                //保存到数据库
+            }
 
         Db::startTrans();
         try {
-            db('zhifu')->where('yuefen',$timenow)->delete();
-            $rel=(new Zf)->saveAll($a);
+//            $start2 = microtime(true);
+
+            db('zhifu30')->where('yuefen',$timenow)->delete();
+
+            $rel=db('zhifu30')->limit(40)->insertall($a);
             Db::commit();
         } catch (\Exception $e) {
             Db::rollback();
@@ -318,28 +106,21 @@ class Zhifu30 extends Common{
         }
         $elapsed = (microtime(true) - $start);
 
+//dump(microtime(true) - $start2);
 
-        $count=Db::name('zhifu')->where('yuefen',$timenow)
-            ->count();
-        $currentPage=input('currentPage');
-        $pagenum=input('pageCount');
-        $row=ceil($count/$pagenum);
-        $zhifujieguo=Db::name('zhifu')->where('yuefen',$timenow)->limit($currentPage*$pagenum-$pagenum,$pagenum)->order('yuefen')->select();
         if(!empty($rel)){
-            return json(['code'=>200,'mes'=>'成功','jieguo'=>$zhifujieguo,'row'=>$row*10,'count'=>$count,'time'=>$elapsed,'chanchu'=>count($a).'条']);
+            return json(['code'=>200,'mes'=>'成功','time'=>$elapsed,'chanchu'=>count($a).'条']);
         }else{
-            return json(['code'=>200,'mes'=>'失败','jieguo'=>$zhifujieguo,'row'=>$row*10,'count'=>$count]);
+            return json(['code'=>200,'mes'=>'失败']);
         }
 
     }
-    public function zhifusearch(){
+    public function zhifu30search(){
         $time=input('time');
 
         $yewuyuan=input('yewuyuan');
         $pinming=input('pinming');
         $guige=input('guige');
-
-
         $where=[];
 
         if(!empty($yewuyuan)){
@@ -352,6 +133,8 @@ class Zhifu30 extends Common{
             $guige=['guige','=',$guige];
             array_push($where,$guige);
         }
+
+
         $count=db('zhifu30')->where('yuefen',$time)->when(!empty($where),function ($query)use($where){
             $query->where([$where]);
         })->count();
@@ -374,11 +157,11 @@ class Zhifu30 extends Common{
             }
 
         if(empty($data)){
-            return json(['code'=>100,'mes'=>'无结果']);
+            return json(['code'=>100,'mes'=>'无结果','data'=>[]]);
         }
         return json(['code'=>200,'mes'=>'成功','data'=>$data,'row'=>$row*10,'count'=>$count]);
     }
-    public function zhifudaochu(){
+    public function zhifu30daochu(){
         require_once '../vendor/phpoffice/phpexcel/Classes/PHPExcel.php';
         require_once '../vendor/phpoffice/phpexcel/Classes/PHPExcel/IOFactory.php';
         $yuefen=input('time');
@@ -490,7 +273,7 @@ class Zhifu30 extends Common{
         header('Cache-Control:max-age=0');
         $PHPWriter->save('php://output');
     }
-    public function zhifudaoru(){
+    public function zhifu30daoru(){
 
         ini_set('memory_limit','512M');
         require_once('../vendor/phpoffice/phpexcel/Classes/PHPExcel/Reader/Excel2007.php');
@@ -559,6 +342,99 @@ class Zhifu30 extends Common{
             return json(['code'=>0,'message'=>'失败','total'=>$total]);
 
         }
+    }
+    public function zhifu30edit(){
+        $data['id']=input('id');
+        $data['yuefen']=str_replace([' ','/','.'],['','-','-'],input('yuefen'));
+        $data['diqu']=input('diqu');
+        $data['bumen']=input('bumen');
+        $data['bumenjingli']=input('bumenjingli');
+        $data['yewuyuan']=input('yewuyuan');
+        $data['yiyuanjibie']=input('yiyuanjibie');
+        $data['kehumingcheng1']=input('kehumingcheng1');
+        $data['kehumingcheng2']=input('kehumingcheng2');
+        $data['shangyegongsi']=input('shangyegongsi');
+        $data['pinming']=input('pinming');
+        $data['guige']=input('guige');
+        $data['shangyuejinhuo']=input('shangyuejinhuo');
+        $data['benyuejinhuo']=input('benyuejinhuo');
+        $data['shangyuexiaoshou']=input('shangyuexiaoshou');
+        $data['benyuekucun']=input('benyuekucun');
+        $data['yapiabbiaozhun']=input('yapiabbiaozhun');
+        $data['abjine']=input('abjine');
+        $data['beizhu']=input('beizhu');
+        $res=db('zhifu30')->update($data);
+
+        if($res){
+            return json(['code'=>200,'message'=>'成功']);
+        }else{
+            return json(['code'=>0,'message'=>'未修改']);
+        }
+
+    }
+    public function zhifu30add(){
+        $data['yuefen']=str_replace([' ','/','.'],['','-','-'],input('yuefen'));
+        $data['diqu']=input('diqu');
+        $data['bumen']=input('bumen');
+        $data['bumenjingli']=input('bumenjingli');
+        $data['yewuyuan']=input('yewuyuan');
+        $data['yiyuanjibie']=input('yiyuanjibie');
+        $data['kehumingcheng1']=input('kehumingcheng1');
+        $data['kehumingcheng2']=input('kehumingcheng2');
+        $data['shangyegongsi']=input('shangyegongsi');
+        $data['pinming']=input('pinming');
+        $data['guige']=input('guige');
+        $data['shangyuejinhuo']=input('shangyuejinhuo');
+        $data['benyuejinhuo']=input('benyuejinhuo');
+        $data['shangyuexiaoshou']=input('shangyuexiaoshou');
+        $data['benyuekucun']=input('benyuekucun');
+        $data['yapiabbiaozhun']=input('yapiabbiaozhun');
+        $data['abjine']=input('abjine');
+        $data['beizhu']=input('beizhu');
+
+        $res=db('zhifu30')->insert($data);
+
+        if($res){
+            return json(['code'=>200,'message'=>'成功']);
+        }else{
+            return json(['code'=>0,'message'=>'未添加']);
+        }
+
+    }
+    public function daoru30shanchu(){
+        $total=(int)input('total');
+
+        if(!is_int($total)){
+            return json(['code' => 0, 'mes' => '没有导入']);
+        }
+        if($total<=1) {
+            return json(['code' => 0, 'mes' => '没有导入']);
+        }
+        $count=db('zhifu30')->order('id','desc')->limit($total)->field('id')->select();
+        $countt=array_column($count,'id');
+
+        $delete=db('zhifu30')->delete($countt);
+        if($delete){
+            return json(['code'=>200,'message'=>'成功,删除了'.$delete.'条']);
+        }else{
+            return json(['code'=>0,'message'=>'失败']);
+        }
+    }
+    public function zhifu30del(){
+        $del=input('id');
+        if(is_array($del)){
+            foreach ($del as $dela){
+                $rel=db('zhifu30')->where('id',$dela)->delete();
+            }
+        }else $rel=db('zhifu30')->where('id',$del)->delete();
+
+        if(($rel>=1)){
+
+            return json(['code'=>200,'message'=>'成功']);
+        }else{
+            return json(['code'=>0,'message'=>'失败']);
+        }
+
     }
 
 

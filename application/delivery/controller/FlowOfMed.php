@@ -32,6 +32,47 @@ class FlowOfMed extends Common{
             return $this->returns(500,'error');
         }
     }
+    public function array_unique_fb($array)
+    {
+        $temp=[];
+        $temp2=[];
+        foreach ($array as $k=>$v)
+        {
+            //数组降维
+            $v = join(",",$v);
+            $temp[$k] = $v;
+        }
+        /**
+         * 加上入库数量一起去重，剩下的可能出现一条数据因为有不同的入库数量发生重复的情况   然后sum 入库数量，  在去重？
+         */
+        //字符串去重(一维数组去重)
+        $temp = array_unique($temp);
+        var_dump($temp);die;
+        foreach ($temp as $k => $v)
+        {
+            //数组重新组装
+            $array=explode(",",$v);
+            //保留键名，再命名
+            $temp2[$k]["id"]      = $array[0];
+            $temp2[$k]["one_id"]      = $array[1];
+            $temp2[$k]["de_id"]      = $array[2];
+            $temp2[$k]["innums"]      = $array[3];
+            $temp2[$k]["facname"]      = $array[4];
+            $temp2[$k]["in_time"]      = $array[5];
+            $temp2[$k]["med_name"]     = $array[6];
+            $temp2[$k]["med_specs"]    = $array[7];
+            $temp2[$k]["med_unit"]     = $array[8];
+            $temp2[$k]["med_salenum"]     = $array[9];
+            $temp2[$k]["med_batchnum"]     = $array[10];
+            $temp2[$k]["med_price"]     = $array[11];
+            $temp2[$k]["customer_name"]     = $array[12];
+            $temp2[$k]["customer_nameb"]     = $array[13];
+            $temp2[$k]["buss_name"]     = $array[14];
+            $temp2[$k]["buss_origin"]  = $array[15];
+            $temp2[$k]["ssid"] = $array[16];
+        }
+        return $temp2;
+    }
     public function des(){
         Db::name('flowofmed')->where('id','>',262349)->delete();
     }
@@ -224,8 +265,10 @@ class FlowOfMed extends Common{
             }else{
                 try {
                     $data[$i]['facname'] = str_replace(PHP_EOL, '',trim($sheet->getCell("B".$i)->getValue()));
-                    if(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10||strstr(trim($sheet->getCell("C".$i)),'.')==true){
+                    if(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10&&strstr(trim($sheet->getCell("C".$i)),'.')==true&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'.')==1){
                         $data[$i]['in_time'] = str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60))));
+                    }elseif(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'.')==0&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'-')==0){
+                        $data[$i]['in_time'] =str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60))));
                     }else{
                         $data[$i]['in_time'] = str_replace(PHP_EOL, '',trim($sheet->getCell("C".$i)->getValue()));
                     }
@@ -301,11 +344,6 @@ class FlowOfMed extends Common{
         $row_num = $sheet->getHighestRow();
         $row_nums = 0 ;
         for($j=0;$j<=$row_num;$j++){
-//            if(!trim($sheet->getCell("B".$j)->getValue())==''&&!trim($sheet->getCell("C".$j)->getValue())==''&&!trim($sheet->getCell("D".$j)->getValue())==''){
-//                $row_nums+=1;
-//            }else{
-//                break;
-//            }
             $nullcount = 0;
             if($sheet->getCell("B".$j)->getValue()==''&&$sheet->getCell("C".$j)->getValue()==''){
                 $nullcount+=1;
@@ -323,37 +361,176 @@ class FlowOfMed extends Common{
         $flow = new Flow;
         //有标题栏  $i=2; 没有标题栏 $i=1;
         for ($i = 2; $i <= $row_nums; $i++) {
-            //+trim
+            if(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10&&strstr(trim($sheet->getCell("C".$i)),'.')==true&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'.')==1){
+                $drtime =str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60))));
+            }elseif(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'.')==0&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'-')==0){
+                $drtime =str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60))));
+            }
+            else{
+                $drtime = str_replace(PHP_EOL, '',trim($sheet->getCell("C".$i)->getValue()));
+            }
+            if(substr_count($drtime,'.')>1){
+                //最后一次出现的位置 索引
+                $lastcx = strripos($drtime,'.');
+                //字符串长度
+                $cd = strlen($drtime);
+                $chomon = substr($drtime, 0,$lastcx );
+                $start = $chomon.'.01';
+                $end = "$chomon.".date("t",strtotime($chomon));
+            }
+            if(substr_count($drtime,'-')>1){
+                //最后一次出现的位置 索引
+                $lastcx = strripos($drtime,'-');
+                //字符串长度
+                $cd = strlen($drtime);
+                $chomon = substr($drtime, 0,$lastcx );
+                $start = $chomon.'-01';
+                $end = "$chomon-".date("t",strtotime($chomon));
+            }
+
             //1.客户名称a,b=2.商业公司名称 1.商业公司名称=2.供应商   1.药品名称=2药品名称   1.规格=2.规格   1.计量单位=2.计量单位   1.批号=2.批号   产地？？？
-            $innum2 = $flow->where('customer_name',str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue())))
+            $innum2 = $flow
+                ->where('in_time','between time',["$start","$end"])
+                ->where('customer_name',str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue())))
+                ->whereOr('customer_nameb',str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue())))
+                ->where('med_name',str_replace(PHP_EOL, '',trim($sheet->getCell("D".$i)->getValue())))
+                ->where('med_specs',str_replace(PHP_EOL, '',trim($sheet->getCell("E".$i)->getValue())))
+                ->where('med_unit',str_replace(PHP_EOL, '',trim($sheet->getCell("F".$i)->getValue())))
+                ->where('med_batchnum',str_replace(PHP_EOL, '',trim($sheet->getCell("H".$i)->getValue())))
+                ->where('ssid',1)
+                ->select()->toArray();
+            /*
+             * 将二级的入库重复的叠加显示
+             */
+         /*   $innum2uni = $flow
+                ->where('in_time','between time',["$start","$end"])
+                ->where('customer_name',str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue())))
                 ->whereOr('customer_nameb',str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue())))
 //                ->where('facname',str_replace(PHP_EOL, '',trim($sheet->getCell("L".$i)->getValue())))
                 ->where('med_name',str_replace(PHP_EOL, '',trim($sheet->getCell("D".$i)->getValue())))
                 ->where('med_specs',str_replace(PHP_EOL, '',trim($sheet->getCell("E".$i)->getValue())))
                 ->where('med_unit',str_replace(PHP_EOL, '',trim($sheet->getCell("F".$i)->getValue())))
                 ->where('med_batchnum',str_replace(PHP_EOL, '',trim($sheet->getCell("H".$i)->getValue())))
-//                ->where('buss_origin',str_replace(PHP_EOL,'',trim($sheet->getCell("M".$i)->getValue())))
+                ->where('ssid',1)
+                ->field('facname,med_name,med_specs,med_unit,med_salenum,med_batchnum,customer_name,customer_nameb,buss_origin,buss_name')
+                ->distinct(true)->select()->toArray();
+         */
+            /*
+             * 叠加显示结束
+             */
+//            $ds = $flow
+//                ->where('in_time','between time',["$start","$end"])
+//                ->where('ssid',1)
+//                ->where('customer_name','neq',str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue())))
+////                ->whereOr('customer_nameb','neq',str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue())))
+//                ->where('med_name','neq',str_replace(PHP_EOL, '',trim($sheet->getCell("D".$i)->getValue())))
+//                ->where('med_specs','neq',str_replace(PHP_EOL, '',trim($sheet->getCell("E".$i)->getValue())))
+//                ->where('med_unit','neq',str_replace(PHP_EOL, '',trim($sheet->getCell("F".$i)->getValue())))
+//                ->where('med_batchnum','neq',str_replace(PHP_EOL, '',trim($sheet->getCell("H".$i)->getValue())))
+//                ->select()->toArray();
+//            var_dump($innum2);die;
+            $ds = $flow
+                ->where('in_time','between time',["$start","$end"])
+                ->where('ssid',1)
                 ->select()->toArray();
-//        dump($innum2);die;
+            $create = [];
+            foreach ($ds as $csk=>$csv){
+                foreach ($innum2 as $kk=>$vv){
+                    if($vv['id']==$csv['id']){
+                        unset($ds[$csk]);
+                    }else{
+                        $new[] = $csv;
+                    }
+                }
+
+//                    ->where('innums','neq',$csv['innums'])
+//                    ->where('facname','neq',$csv['facname'])
+////                    ->where('in_time','neq',$csv['in_time'])
+//                    ->where('med_name','neq',$csv['med_name'])
+//                    ->where('med_specs','neq',$csv['med_specs'])
+//                    ->where('med_unit','neq',$csv['med_unit'])
+//                    ->where('med_salenum','neq',$csv['med_salenum'])
+//                    ->where('med_batchnum','neq',$csv['med_batchnum'])
+//                    ->where('customer_name','neq',$csv['customer_name'])
+//                    ->where('buss_name','neq',$csv['buss_name'])
+//                    ->where('buss_name','neq',$csv['buss_name'])
+//                    ->where('buss_origin','neq',$csv['buss_origin'])
+                   // ->find();//->toArray();
+            }
+            foreach ($ds as $dk=>$dv){
+                $create[$dk]['innums'] = $dv['med_salenum'];
+                $create[$dk]['facname'] = $dv['customer_name'];
+                $create[$dk]['in_time'] = $dv['in_time'];
+                $create[$dk]['med_name'] = $dv['med_name'];
+                $create[$dk]['med_specs'] = $dv['med_specs'];
+                $create[$dk]['med_unit'] = $dv['med_unit'];
+                $create[$dk]['med_salenum'] = 0;
+                $create[$dk]['med_batchnum'] = $dv['med_batchnum'];
+                $create[$dk]['med_price'] = $dv['med_price'];
+                $create[$dk]['customer_name'] = '';
+                $create[$dk]['customer_nameb'] = '';
+                $create[$dk]['buss_name'] = $dv['facname'];
+                $create[$dk]['buss_origin'] = $dv['buss_origin'];
+                $create[$dk]['ssid']  = 2;
+
+            }
+//        dump($create);die;
             if($innum2){
+                /*
+                 * 二级叠加显示
+                 */
                 if(count($innum2)>1){
-                    $data[$i]['innums'] = 0;
-                    $data[$i]['buss_name']='';
+
                     foreach ($innum2 as $k=>$v){
+                        $data[$k]['innums'] = 0;
+                        $data[$k]['buss_name']='';
                         if($innum2[$k]['customer_name']  ==  str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue()))&&
                             $innum2[$k]['med_name']       ==  str_replace(PHP_EOL, '',trim($sheet->getCell("D".$i)->getValue()))&&
                             $innum2[$k]['med_specs']      ==  str_replace(PHP_EOL, '',trim($sheet->getCell("E".$i)->getValue()))&&
                             $innum2[$k]['med_unit']       ==  str_replace(PHP_EOL, '',trim($sheet->getCell("F".$i)->getValue()))&&
                             $innum2[$k]['med_batchnum']   ==  str_replace(PHP_EOL, '',trim($sheet->getCell("H".$i)->getValue())))
                         {
-                            $data[$i]['innums']  =  str_replace(PHP_EOL, '', $innum2[$k]['med_salenum']);
-                            $data[$i]['buss_name'] .= str_replace(PHP_EOL,'',$innum2[$k]['facname'].'/');
-                            $data[$i]['one_id']   =  $innum2[$k]['id'];
+                            $data[$k]['innums']  =  str_replace(PHP_EOL, '', $innum2[$k]['med_salenum']);
+                            $data[$k]['buss_name'] .= str_replace(PHP_EOL,'',$innum2[$k]['facname']);
+                            $data[$k]['one_id']   =  $innum2[$k]['id'];
+                            if(trim($sheet->getCell("B".$i)->getValue())==''&&trim($sheet->getCell("C".$i)->getValue())==''&&trim($sheet->getCell("D".$i)->getValue())==''){
+                            }else{
+                                try {
+                                    $data[$k]['facname'] = str_replace(PHP_EOL, '',trim($sheet->getCell("B".$i)->getValue()));
+                                    if(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10&&strstr(trim($sheet->getCell("C".$i)),'.')==true&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'.')==1){
+                                        $data[$k]['in_time'] =str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60))));
+                                    }elseif(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'.')==0&&substr_count(trim($sheet->getCell("C".$i)->getValue()),'-')==0){
+                                        $data[$k]['in_time'] =str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60))));
+                                    }else{
+//                        dump(str_replace(PHP_EOL, '',trim($sheet->getCell("C".$i)->getValue())));die;
+                                        $data[$k]['in_time'] = str_replace(PHP_EOL, '',trim($sheet->getCell("C".$i)->getValue()));
+                                    }
+                                    $data[$k]['med_name']        =  str_replace(PHP_EOL, '',trim($sheet->getCell("D".$i)->getValue()));
+                                    $data[$k]['med_specs']       =  str_replace(PHP_EOL, '',trim($sheet->getCell("E".$i)->getValue()));
+                                    $data[$k]['med_unit']        =  str_replace(PHP_EOL, '',trim($sheet->getCell("F".$i)->getValue()));
+                                    $data[$k]['med_salenum']     =  str_replace(PHP_EOL, '',trim($sheet->getCell("G".$i)->getValue()));
+                                    $data[$k]['med_batchnum']    =  str_replace(PHP_EOL, '',trim($sheet->getCell("H".$i)->getValue()));
+                                    $data[$k]['med_price']       =  number_format(str_replace(PHP_EOL, '',trim($sheet->getCell("I".$i)->getValue())),2,'.','');
+                                    $data[$k]['customer_name']   =  str_replace(PHP_EOL, '',trim($sheet->getCell("J".$i)->getValue()));
+                                    $data[$k]['customer_nameb']  =  str_replace(PHP_EOL, '',trim($sheet->getCell("K".$i)->getValue()));
+//                    $data[$k]['buss_name']       =  str_replace(PHP_EOL, '',trim($sheet->getCell("L".$i)->getValue()));
+                                    $data[$k]['buss_origin']     =  str_replace(PHP_EOL, '',trim($sheet->getCell("M".$i)->getValue()));
+                                    $data[$k]['create_time']     =  $time;
+                                    $data[$k]['update_time']     =  $time;
+                                    $data[$k]['ssid']            =  2;
+
+                                }catch (\Exception $e){
+                                    return $this->returns(500,$e->getMessage());
+                                }
+
+                            }
+
                         }else{
-                            $data[$i]['innums']   =  0;
-                            $data[$i]['buss_name'] = '';
+                            $data[$k]['innums']   =  0;
+                            $data[$k]['buss_name'] = '';
                         }
                     }
+//                    dump($data);die;
                 }else{
                     foreach ($innum2 as $k=>$v){
                         if($innum2[$k]['customer_name']  ==  str_replace(PHP_EOL,'',trim($sheet->getCell("B".$i)->getValue()))&&
@@ -373,38 +550,7 @@ class FlowOfMed extends Common{
                 }
 
             }
-            if(trim($sheet->getCell("B".$i)->getValue())==''&&trim($sheet->getCell("C".$i)->getValue())==''&&trim($sheet->getCell("D".$i)->getValue())==''){
-            }else{
-                try {
-//                    dump(date('Y-m-d',(44562.378472222-25569)*24*60*60));die;
-                    $data[$i]['facname'] = str_replace(PHP_EOL, '',trim($sheet->getCell("B".$i)->getValue()));
-//                    dump(str_replace(PHP_EOL, '',trim($sheet->getCell("C".$i)->getValue())));die;
-//                    dump(str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60)))));die;
-                    if(strlen(trim($sheet->getCell("C".$i)->getValue()))!=10||strstr(trim($sheet->getCell("C".$i)),'.')==true){
-                        $data[$i]['in_time'] =str_replace(PHP_EOL, '', trim(date("Y-m-d", trim(($sheet->getCell("C".$i)->getValue() - 25569) * 24 * 60 * 60))));
-                    }else{
-//                        dump(str_replace(PHP_EOL, '',trim($sheet->getCell("C".$i)->getValue())));die;
-                        $data[$i]['in_time'] = str_replace(PHP_EOL, '',trim($sheet->getCell("C".$i)->getValue()));
-                    }
-                    $data[$i]['med_name']        =  str_replace(PHP_EOL, '',trim($sheet->getCell("D".$i)->getValue()));
-                    $data[$i]['med_specs']       =  str_replace(PHP_EOL, '',trim($sheet->getCell("E".$i)->getValue()));
-                    $data[$i]['med_unit']        =  str_replace(PHP_EOL, '',trim($sheet->getCell("F".$i)->getValue()));
-                    $data[$i]['med_salenum']     =  str_replace(PHP_EOL, '',trim($sheet->getCell("G".$i)->getValue()));
-                    $data[$i]['med_batchnum']    =  str_replace(PHP_EOL, '',trim($sheet->getCell("H".$i)->getValue()));
-                    $data[$i]['med_price']       =  number_format(str_replace(PHP_EOL, '',trim($sheet->getCell("I".$i)->getValue())),2,'.','');
-                    $data[$i]['customer_name']   =  str_replace(PHP_EOL, '',trim($sheet->getCell("J".$i)->getValue()));
-                    $data[$i]['customer_nameb']  =  str_replace(PHP_EOL, '',trim($sheet->getCell("K".$i)->getValue()));
-//                    $data[$i]['buss_name']       =  str_replace(PHP_EOL, '',trim($sheet->getCell("L".$i)->getValue()));
-                    $data[$i]['buss_origin']     =  str_replace(PHP_EOL, '',trim($sheet->getCell("M".$i)->getValue()));
-                    $data[$i]['create_time']     =  $time;
-                    $data[$i]['update_time']     =  $time;
-                    $data[$i]['ssid']            =  2;
 
-                }catch (\Exception $e){
-                    return $this->returns(500,$e->getMessage());
-                }
-
-            }
         }
         foreach($data as $dk=>$dv){
             if(!isset($data[$dk]['innums'])){
@@ -413,15 +559,12 @@ class FlowOfMed extends Common{
             if(empty($data[$dk]['in_time'])){
                 $data[$dk]['in_time']='1111-11-11';
             }
-//            if(strstr($data[$dk]['in_time'],'-')==false || strstr($data[$dk]['in_time'],'/')==false){
-//               $data[$dk]['in_time']=date('Y-m-d',strtotime(($data[$dk]['in_time']-25569)*24*60*60));
-//               dump($data[$dk]['in_time']);
-//            }
         }
-
+        $createdata = array_merge($data,$create);
+//        var_dump($createdata);die;
         //将数据保存到数据库
-//        dump($data);die;
-        $res = $flow->saveAll($data);
+
+        $res = $flow->saveAll($createdata);
         if($res){
             Cache::set('two',$res);
             return $this->returns(200,'导入成功');

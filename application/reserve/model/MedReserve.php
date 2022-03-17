@@ -39,14 +39,13 @@ class MedReserve extends ModelBase{
                 }
                 return [$result,$counts];
             }
-
     }
     public function medstlist(){
         $time = date("Y-m");
         $time1 = $time.'-01';
         $time2 = date("t",strtotime($time));
         $time2 = $time.'-'.$time2;
-        return Db::name('med_reserve')->order('id desc')->select();
+        return Db::name('med_reserve')->where('operation_time','between time',[$time1,$time2])->order('id desc')->select();
     }
     /**
      * @param string $data

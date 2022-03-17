@@ -151,8 +151,8 @@ class Zhifu extends Common{
         $gongshi=db::name('gongshi')->field('daibiao')->select();
         foreach($yaoming as $ym) {
             $i=-1;
-            $data = Db::name('flowofmed')->field('facname','med_name,med_specs,customer_name,customer_nameb,med_price,sum(med_salenum) as med_salenum')
-                ->where('med_name', $ym['pinming'])
+            $data = Db::name('flowofmed')->field('facname,med_name,med_specs,customer_name,customer_nameb,med_price,sum(med_salenum) as med_salenum')
+               // ->where('med_name', $ym['pinming'])
                 ->where('in_time', 'between time', [$timenow . '-01', $timenow . '-' . $time2])
                 ->group('med_name,med_specs,customer_name,customer_nameb')
                 ->order('med_name')
@@ -168,7 +168,7 @@ class Zhifu extends Common{
             foreach ($zhifu as $value) {
                 $i++;
                 $new["benyuejinhuo"] = 0;
-                $new['shangyueyushu'] = $value['benyueyushu'];
+                $new['shangyueyushu'] = $value['benyueyushu']; //dump($value['benyueyushu']);exit;
                 if($ym['pinming']=='开喉剑喷雾剂' && $value['guige']=='儿童20ml'&& in_array($value['daibiao'],$gongshi)){
                     foreach ($data as $k=> $liushui) {
                         if ($value['guige'] == $liushui['med_specs'] &&
@@ -194,12 +194,15 @@ class Zhifu extends Common{
                             $value['kehumingcheng1'] == $liushui['customer_name'] &&
                             $value['kehumingcheng2'] == $liushui['customer_nameb']
                         ){
+
                             $new["benyuejinhuo"] = $liushui['med_salenum'];
+//                            dump($new['shangyueyushu']+1);exit;
+
                                 if(($new['shangyueyushu']+$new['benyuejinhuo'])<0){
                                     $new['benyuexiaoshou'] = bcadd($new['shangyueyushu'], $new['benyuejinhuo'], 2);
                                     $new['benyueyushu'] = 0;
-                                }
-                                if($liushui['facname']=='丽水'||$liushui['facname']=='谛康'){
+                                }//dump($liushui);exit;
+                                if($liushui['facname']=='河北丽泰医药有限公司'||$liushui['facname']=='河北谛康医药有限公司'){
                                     $new['benyueyushu']=0;
                                     $new['shangyueyushu']=$new["benyuejinhuo"] ;
                                 }
@@ -293,6 +296,7 @@ class Zhifu extends Common{
                         }
                     }
                 }
+//                dump($new);exit;
 
                 //保存到数据库
 
@@ -313,17 +317,10 @@ class Zhifu extends Common{
         }
         $elapsed = (microtime(true) - $start);
 
-
-        $count=Db::name('zhifu')->where('yuefen',$timenow)
-            ->count();
-        $currentPage=input('currentPage');
-        $pagenum=input('pageCount');
-        $row=ceil($count/$pagenum);
-        $zhifujieguo=Db::name('zhifu')->where('yuefen',$timenow)->limit($currentPage*$pagenum-$pagenum,$pagenum)->order('yuefen')->select();
         if(!empty($rel)){
-            return json(['code'=>200,'mes'=>'成功','jieguo'=>$zhifujieguo,'row'=>$row*10,'count'=>$count,'time'=>$elapsed,'chanchu'=>count($a).'条']);
+            return json(['code'=>200,'mes'=>'成功','time'=>$elapsed,'chanchu'=>count($a).'条']);
         }else{
-            return json(['code'=>200,'mes'=>'失败','jieguo'=>$zhifujieguo,'row'=>$row*10,'count'=>$count]);
+            return json(['code'=>200,'mes'=>'失败']);
         }
     }
 
@@ -333,7 +330,7 @@ class Zhifu extends Common{
         $zhuguan=input('zhuguan');
         $pinming=input('pinming');
         $guige=input('guige');
-        $jingli=input('jingli');
+        $jingli=input('bumenjingli');
         $yewuyuan=input('yewuyuan');
         $daibiao=input('daibiao');
 
@@ -383,7 +380,7 @@ class Zhifu extends Common{
 
 
         if(empty($data)){
-            return json(['code'=>100,'mes'=>'无结果']);
+            return json(['code'=>100,'mes'=>'无结果','data'=>[]]);
         }
         return json(['code'=>200,'mes'=>'成功','data'=>$data,'row'=>$row*10,'count'=>$count]);
     }
@@ -693,12 +690,13 @@ class Zhifu extends Common{
         $PHPWriter->save('php://output');
     }
     public function xiugaixingming(){
-        $zhongduanmingcheng=input('zhongduanmingcheng');
+        $zhongduanmingcheng=input('kehumingcheng1');
         $leixing=input('leixing');
         $name=input('name');
         $upname=input('upname');
         $yuefen=input('yuefen');
-        $data=Db::name('zhifu')->where('yuefen',$yuefen)->where('zhongduanmingcheng',$zhongduanmingcheng)->where($leixing,$name)->update([$leixing=>$upname]);
+        $data=Db::name('zhifu')->where('yuefen',$yuefen)->where('kehumingcheng1',$zhongduanmingcheng)->where($leixing,$name)->update([$leixing=>$upname]);
+//        dump($data);exit;
         //dump($data);
         if($data){
             return json(['code'=>200,'message'=>'成功']);
@@ -805,7 +803,7 @@ class Zhifu extends Common{
         if($total<=1) {
             return json(['code' => 0, 'mes' => '没有导入']);
         }
-        $count=db('out')->order('id','desc')->limit($total)->field('id')->select();
+        $count=db('zhifu')->order('id','desc')->limit($total)->field('id')->select();
         $countt=array_column($count,'id');
 
         $delete=db('out')->delete($countt);

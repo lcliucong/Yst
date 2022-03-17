@@ -3,9 +3,11 @@ namespace app\admin\controller;
 use think\Controller;
 use app\common\Common;
 use think\facade\Cache;
+use think\facade\session;
 use think\Db;
 use think\Query;
 use think\cache\driver\Redis;
+//use think\session;
 class Jiangjin extends Common
 {
     public function jiangjin()
@@ -503,6 +505,9 @@ class Jiangjin extends Common
         dump($a*$b);
     }
     public function ceshi25(){
+        ob_start();
+        //session_start();
+        dump(session::get());exit;
         $data=['1','2','3','a','b'];
         foreach ($data as$k =>&$v){
             if($v=='a'){
@@ -515,5 +520,66 @@ class Jiangjin extends Common
         }
         dump($v);
         dump($data);
+        ob_clean();
+        $a=[1,2,3];
+        foreach ($a as &$c){
+    if($c==3){
+        echo 'x';
+        $c=4;
+    }
+        }
+        dump($a);
+    }
+    public function ceshi26(){
+        ob_start();
+        echo "1<br>";
+        echo "2<br>" ;
+//        ob_flush();
+//        flush();
+//        ob_start();
+//        ob_clean();
+        echo 4;
+
+        echo "3<br>" ;
+//        $a=ob_get_flush();
+//        echo 5;
+//        ob_start();
+//        echo 1;
+//        ob_clean();
+//        dump($a);
+//        $a=ob_get_flush();
+        ob_clean();
+
+//        dump($a);
+        dump(db('zhifu60')->fetchsql()->select(['id'=>"310"."%"]));
+    }
+    public function ceshi27(){
+        //session_start();
+//        $obj=new Demo1;
+//        echo $obj->name;
+//        $obj2=new $obj;
+//        $obj3=new self;
+        /**
+         * return new parent()
+         * return new self()自己类
+         * retturn new static()子类
+         * */
+        /**
+         * 有结果的都可以叫做表达式
+         *
+         */
+       // creatr_function('');//调用函数
+        echo ((function($a){return $a;})(1));//一次性函数
+    /**
+     * 类名：：类常量名
+     * 类变量：：类常量名
+     * 对象：：
+     * 对象：方法
+     */
+    /**
+     * require('test.php')
+     * include('test.php')
+     */
+       dump( $_SERVER['HTTP_ACCEPT']);
     }
 }
